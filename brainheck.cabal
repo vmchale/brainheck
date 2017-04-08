@@ -1,7 +1,7 @@
 name:                brainheck
 version:             0.1.0.0
--- synopsis:
--- description:
+synopsis:            Brainh*ck interpreter in haskell
+description:         Brainh*ck interpreter written in haskell and taking advantage of many prominent libraries
 homepage:            https://github.com/vmchale/brainheck#readme
 license:             BSD3
 license-file:        LICENSE
@@ -11,6 +11,8 @@ copyright:           Copyright: (c) 2016 Vanessa McHale
 category:            Web
 build-type:          Simple
 extra-source-files:  README.md
+                   , stack.yaml
+                   , bf/helloworld.bf
 cabal-version:       >=1.10
 
 library

@@ -15,5 +15,6 @@ mkDerivation {
   executableHaskellDepends = [ base ];
   testHaskellDepends = [ base ];
   homepage = "https://github.com/vmchale/brainheck#readme";
+  description = "Brainh*ck interpreter in haskell";
   license = stdenv.lib.licenses.bsd3;
 }
