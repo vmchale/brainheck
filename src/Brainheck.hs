@@ -2,9 +2,11 @@
 {-# LANGUAGE KindSignatures   #-}
 {-# LANGUAGE FlexibleContexts #-}
 
+-- | Module with parser etc. 
 module Brainheck
     ( run
     , parseBrainheck
+    -- * Types
     , Syntax (..)
     ) where
 
@@ -22,12 +24,14 @@ import qualified Data.Map as M
 type St a = StateT IndexArr IO a
 type IndexArr = (V.Vector Int, Int)
 
+-- | Syntax tree for brainfuck
 data Syntax a = Loop (Syntax a)
               | Seq [Syntax a]
               | Token a deriving (Show)
 
 makeBaseFunctor ''Syntax
 
+-- | Map a char to its action in the `St` monad
 toAction :: Char -> St ()
 toAction = maybe (error mempty) id . flip M.lookup keys
     where modifyVal f = flip modifyByIndex f . snd =<< get 
@@ -40,9 +44,9 @@ toAction = maybe (error mempty) id . flip M.lookup keys
                             , ('+', modifyVal (+1))
                             , ('-', modifyVal (subtract 1))
                             , ('>', modifyState _2 (+1))
-                            , ('<', modifyState _2 (subtract 1))
-                            ]
+                            , ('<', modifyState _2 (subtract 1)) ]
 
+-- | Parse to syntax tree
 brainheck :: Parser (Syntax Char)
 brainheck = Seq <$> many (Seq . (fmap Token) <$> (some . oneOf) "+-.,<>"
     <|> Loop <$> between (char '[') (char ']') brainheck)
@@ -53,8 +57,10 @@ algebra (SeqF x) = foldr (>>) (pure ()) x
 algebra l@(LoopF x) = check >>= (\bool -> if bool then pure () else x >> algebra l)
     where check = get >>= (\(arr,i) -> pure . (==0) . (V.! i) $ arr)
 
+-- | Evaluate syntax tree
 run :: (Syntax Char) -> IO ()
 run parsed = fst <$> runStateT (cata algebra parsed) (V.replicate 30000 0, 0)
 
+-- | Parse and return an error or a syntax tree
 parseBrainheck :: FilePath -> T.Text -> Either (ParseError (Token T.Text) Dec) (Syntax Char)
 parseBrainheck filepath = (parse (brainheck) filepath) . (T.filter (`elem` "[]+-.,<>"))
