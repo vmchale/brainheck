@@ -2,4 +2,4 @@ let
   pkgs = import <nixpkgs> { };
 
 in
-  pkgs.haskellPackages.callPackage ./default.nix { }
+  pkgs.haskell.lib.justStaticExecutables (pkgs.haskellPackages.callPackage ./default.nix { })
