@@ -3,7 +3,8 @@
 {-# LANGUAGE TypeFamilies    #-}
 
 module Brainheck
-    ( exec
+    ( run
+    , parseBrainheck
     ) where
 
 import qualified Data.Vector as V
@@ -14,12 +15,10 @@ import Text.Megaparsec hiding (State)
 import Text.Megaparsec.Text
 import qualified Text.Megaparsec.Lexer as L
 import qualified Data.Text as T
-import qualified Data.Text.IO as TIO
 import Control.Monad.Primitive
 import Control.Lens
 import Data.Vector.Lens
 import qualified Data.Map as M
-import Options.Applicative
 
 -- philosophizing with a hammer // catastrophe of abstraction
 
@@ -30,8 +29,6 @@ type IndexArr = (Array, Int)
 data Syntax a = Loop (Syntax a)
               | Seq [Syntax a]
               | Token Char deriving (Show)
-
-data Program = Program { filepath :: FilePath }
 
 makeBaseFunctor ''Syntax
 
@@ -104,28 +101,10 @@ algebra l@(LoopF x) = do
 algebra (TokenF x) = toAction x
 algebra (SeqF x) = foldr (>>) (pure ()) x
 
-run :: Syntax Char -> St ()
-run = cata algebra
+crush :: Syntax Char -> St ()
+crush = cata algebra
 
-parser :: T.Text -> Either (ParseError (Token T.Text) Dec) (Syntax Char)
-parser = (parse (brainheck) "") . filterChar
+run parsed = runStateT (crush parsed) initial
 
-program :: Parser Program
-program = Program
-    <$> argument str
-    ( metavar "FILE"
-    <> help "Brainfuck file" )
-
-main :: IO ()
-main = runFile =<< execParser opts
-  where
-    opts = info (program <**> helper)
-      ( fullDesc
-     <> progDesc "Print a greeting for TARGET"
-     <> header "hello - a test for optparse-applicative" )
-
-runFile :: Program -> IO ()
-runFile program = do
-    file <- TIO.readFile (filepath) program
-    let parsed = either (error . show) id $ parser file
-    fst <$> runStateT (run parsed) initial
+parseBrainheck :: T.Text -> Either (ParseError (Token T.Text) Dec) (Syntax Char)
+parseBrainheck = (parse (brainheck) "") . filterChar
