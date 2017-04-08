@@ -30,27 +30,17 @@ data Syntax a = Loop (Syntax a)
 
 makeBaseFunctor ''Syntax
 
-filterChar :: T.Text -> T.Text
-filterChar = T.filter (`elem` "[]+-.,<>")
-
 initial :: IndexArr
 initial = (V.replicate 30000 0, 0)
 
 check :: St Bool
-check = do
-    (arr,i) <- get
-    pure . (==0) . (V.! i) $ arr
+check = get >>= (\(arr,i) -> pure . (==0) . (V.! i) $ arr)
 
 displayChar :: St ()
-displayChar = do
-    (arr,i) <- get
-    liftIO . putChar . toEnum . (V.! i) $ arr
+displayChar = get >>= (\(arr,i) -> liftIO . putChar . toEnum . (V.! i) $ arr)
 
 readChar :: St ()
-readChar = do
-    (_,i) <- get
-    char <- liftIO . (fmap fromEnum) $ getChar
-    modifyByIndex i (const char)
+readChar = get >>= (\(_,i) -> modifyByIndex i . const =<< (liftIO . (fmap fromEnum)) getChar)
 
 modifyState lens = (lens %%=) . (pure .)
 
@@ -58,12 +48,10 @@ modifyByIndex :: Int -> (Int -> Int) -> St ()
 modifyByIndex i = modifyState (_1 . sliced i 1) . fmap
 
 modifyVal :: (Int -> Int) -> St ()
-modifyVal f = do
-    (_,i) <- get
-    modifyByIndex i f
+modifyVal f = flip modifyByIndex f . snd =<< get 
 
 toAction :: Char -> St ()
-toAction = maybe (error "unexpected token") id .  flip M.lookup keys
+toAction = maybe (error mempty) id . flip M.lookup keys
     where keys = M.fromList [ ('.', displayChar)
                             , (',', readChar)
                             , ('+', modifyVal (+1))
@@ -75,12 +63,10 @@ toAction = maybe (error "unexpected token") id .  flip M.lookup keys
 brainheck :: Parser (Syntax Char)
 brainheck = Seq <$> many (action <|> loop)
     where loop = Loop <$> between (char '[') (char ']') brainheck
-          action = Seq . (map Token) <$> (some . oneOf) "+-.,<>"
+          action = Seq . (fmap Token) <$> (some . oneOf) "+-.,<>"
 
 algebra :: Base (Syntax Char) (St ()) -> St ()
-algebra l@(LoopF x) = do
-    bool <- check
-    if bool then pure () else x >> algebra l 
+algebra l@(LoopF x) = check >>= (\bool -> if bool then pure () else x >> algebra l)
 algebra (TokenF x) = toAction x
 algebra (SeqF x) = foldr (>>) (pure ()) x
 
@@ -88,4 +74,4 @@ run :: (Syntax Char) -> IO ()
 run parsed = fst <$> runStateT (cata algebra parsed) initial
 
 parseBrainheck :: T.Text -> Either (ParseError (Token T.Text) Dec) (Syntax Char)
-parseBrainheck = (parse (brainheck) "") . filterChar
+parseBrainheck = (parse (brainheck) "") . (T.filter (`elem` "[]+-.,<>"))
