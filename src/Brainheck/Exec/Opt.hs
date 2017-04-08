@@ -21,11 +21,11 @@ exec = runFile =<< execParser opts
   where
     opts = info (program <**> helper)
       ( fullDesc
-     <> progDesc "Print a greeting for TARGET"
-     <> header "hello - a test for optparse-applicative" )
+     <> progDesc "Brainh*ck interpreter"
+     <> header "brainheck - a brainh*ck intrepreter written in haskell and supporting utf-8" )
 
 runFile :: Program -> IO ()
 runFile program = do
     file <- TIO.readFile (filepath program)
     let parsed = either (error . show) id $ parseBrainheck file
-    fst <$> run parsed 
+    run parsed 

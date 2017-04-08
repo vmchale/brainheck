@@ -20,11 +20,9 @@ import Control.Lens
 import Data.Vector.Lens
 import qualified Data.Map as M
 
--- philosophizing with a hammer // catastrophe of abstraction
-
 type St a = StateT IndexArr IO a
-type Array = V.Vector Int -- TODO use mutable vector, e.g. V.MVector (PrimState IO) Int
-type IndexArr = (Array, Int)
+type IndexArr = (V.Vector Int, Int)
+-- TODO use mutable vector, e.g. V.MVector (PrimState IO) Int
 
 data Syntax a = Loop (Syntax a)
               | Seq [Syntax a]
@@ -54,45 +52,30 @@ readChar = do
     char <- liftIO . (fmap fromEnum) $ getChar
     modifyByIndex i (const char)
 
-modifyIndex :: (Int -> Int) -> St ()
-modifyIndex = modify . (over _2)
-
-bumpIndex :: St ()
-bumpIndex = modifyIndex (+1)
-
-shrinkIndex :: St ()
-shrinkIndex = modifyIndex (subtract 1)
+modifyState lens = (lens %%=) . (pure .)
 
 modifyByIndex :: Int -> (Int -> Int) -> St ()
-modifyByIndex i = ((_1 . sliced i 1) %%=) . (pure .) . fmap
+modifyByIndex i = modifyState (_1 . sliced i 1) . fmap
 
 modifyVal :: (Int -> Int) -> St ()
 modifyVal f = do
     (_,i) <- get
     modifyByIndex i f
 
-bumpVal :: St ()
-bumpVal = modifyVal (+1)
-
-shrinkVal :: St ()
-shrinkVal = modifyVal (subtract 1)
-
 toAction :: Char -> St ()
 toAction = maybe (error "unexpected token") id .  flip M.lookup keys
     where keys = M.fromList [ ('.', displayChar)
                             , (',', readChar)
-                            , ('+', bumpVal)
-                            , ('-', shrinkVal)
-                            , ('>', bumpIndex)
-                            , ('<', shrinkIndex)
+                            , ('+', modifyVal (+1))
+                            , ('-', modifyVal (subtract 1))
+                            , ('>', modifyState _2 (+1))
+                            , ('<', modifyState _2 (subtract 1))
                             ]
 
 brainheck :: Parser (Syntax Char)
 brainheck = Seq <$> many (action <|> loop)
     where loop = Loop <$> between (char '[') (char ']') brainheck
           action = Seq . (map Token) <$> (some . oneOf) "+-.,<>"
-
--- coalgebra :: T.Text -> Base (Syntax Char) T.Text
 
 algebra :: Base (Syntax Char) (St ()) -> St ()
 algebra l@(LoopF x) = do
@@ -101,10 +84,8 @@ algebra l@(LoopF x) = do
 algebra (TokenF x) = toAction x
 algebra (SeqF x) = foldr (>>) (pure ()) x
 
-crush :: Syntax Char -> St ()
-crush = cata algebra
-
-run parsed = runStateT (crush parsed) initial
+run :: (Syntax Char) -> IO ()
+run parsed = fst <$> runStateT (cata algebra parsed) initial
 
 parseBrainheck :: T.Text -> Either (ParseError (Token T.Text) Dec) (Syntax Char)
 parseBrainheck = (parse (brainheck) "") . filterChar
