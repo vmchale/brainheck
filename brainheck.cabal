@@ -24,13 +24,13 @@ Flag llvm-fast {
 library
   hs-source-dirs:      src
   exposed-modules:     Brainheck
-  build-depends:       base >= 4.7 && < 5
+  build-depends:       base >= 4.8 && < 5
                      , mtl
                      , vector
                      , recursion-schemes
                      , text
                      , lens
-                     , megaparsec
+                     , megaparsec >= 6.0
                      , containers
   default-language:    Haskell2010
   default-extensions:  DeriveFunctor
