@@ -6,12 +6,6 @@ monadic parser combinators.
 
 ## Installation
 
-With [nix](http://nixos.org/nix/):
-
-```bash
- $ nix-env -i brainheck
-```
-
 With [stack](https://haskellstack.org/):
 
 ```bash
