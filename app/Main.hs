@@ -1,11 +1,10 @@
 module Main where
 
-import Brainheck
-import Options.Applicative
-import qualified Data.Text.IO as TIO
-import Data.Monoid
-import Data.Version
-import Paths_brainheck
+import           Brainheck
+import qualified Data.Text.IO        as TIO
+import           Data.Version
+import           Options.Applicative
+import           Paths_brainheck
 
 program :: Parser FilePath
 program = argument str (metavar "FILE" <> help "Brainfuck file")

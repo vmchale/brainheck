@@ -6,10 +6,10 @@ monadic parser combinators.
 
 ## Installation
 
-With [stack](https://haskellstack.org/):
+With [cabal](https://www.haskell.org/cabal/download.html):
 
 ```bash
- $ stack install brainheck
+ $ cabal install brainheck
 ```
 
 ## Examples

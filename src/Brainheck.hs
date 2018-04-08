@@ -10,11 +10,12 @@ module Brainheck
     , Syntax (..)
     ) where
 
-import           Control.Lens
+import           Control.Lens             hiding (lens)
 import           Control.Monad.State.Lazy
 import           Data.Functor.Foldable
 import           Data.Functor.Foldable.TH
 import qualified Data.Map                 as M
+import           Data.Maybe
 import qualified Data.Text                as T
 import qualified Data.Vector              as V
 import           Data.Vector.Lens
@@ -35,11 +36,11 @@ makeBaseFunctor ''Syntax
 
 -- | Map a char to its action in the `St` monad
 toAction :: Char -> St ()
-toAction = maybe (error mempty) id . flip M.lookup keys
+toAction = fromMaybe (error mempty) . flip M.lookup keys
     where modifyVal f = flip modifyByIndex f . snd =<< get
           modifyByIndex i = modifyState (_1 . sliced i 1 . forced) . fmap
           modifyState lens = (lens %%=) . (pure .)
-          readChar = get >>= (\(_,i) -> modifyByIndex i . const =<< (liftIO . (fmap fromEnum)) getChar)
+          readChar = get >>= (\(_,i) -> modifyByIndex i . const =<< (liftIO . fmap fromEnum) getChar)
           displayChar = get >>= (\(arr,i) -> liftIO . putChar . toEnum . (V.! i) $ arr)
           keys = M.fromList [ ('.', displayChar)
                             , (',', readChar)
@@ -50,7 +51,7 @@ toAction = maybe (error mempty) id . flip M.lookup keys
 
 -- | Parse to syntax tree
 brainheck :: Parser (Syntax Char)
-brainheck = Seq <$> many (Seq . (fmap Token) <$> (some . oneOf) "+-.,<>"
+brainheck = Seq <$> many (Seq . fmap Token <$> (some . oneOf) "+-.,<>"
     <|> Loop <$> between (char '[') (char ']') brainheck)
 
 algebra :: Base (Syntax Char) (St ()) -> St ()
@@ -60,9 +61,9 @@ algebra l@(LoopF x) = check >>= (\bool -> if bool then pure () else x >> algebra
     where check = get >>= (\(arr,i) -> pure . (==0) . (V.! i) $ arr)
 
 -- | Evaluate syntax tree
-run :: (Syntax Char) -> IO ()
+run :: Syntax Char -> IO ()
 run parsed = fst <$> runStateT (cata algebra parsed) (V.replicate 30000 0, 0)
 
 -- | Parse and return an error or a syntax tree
 parseBrainheck :: FilePath -> T.Text -> Either (ParseError (Token T.Text) Void) (Syntax Char)
-parseBrainheck filepath = (parse (brainheck) filepath) . (T.filter (`elem` "[]+-.,<>"))
+parseBrainheck filepath = parse brainheck filepath . T.filter (`elem` "[]+-.,<>")
