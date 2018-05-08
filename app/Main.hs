@@ -10,7 +10,7 @@ program :: Parser FilePath
 program = argument str (metavar "FILE" <> help "Brainfuck file")
 
 main :: IO ()
-main = let runFile filepath = either (error . show) id . (parseBrainheck filepath) <$> TIO.readFile filepath >>= run in
+main = let runFile filepath = either (error . show) id . parseBrainheck filepath <$> TIO.readFile filepath >>= run in
     runFile =<< execParser (info (program <**> helper <**> versionInfo) (fullDesc
         <> progDesc "Brainh*ck - an interpreter"
         <> header "brainheck - a brainfuck intrepreter written in haskell and supporting utf-8"))

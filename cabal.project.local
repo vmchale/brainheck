@@ -1,1 +1,4 @@
 constraints: brainheck +development
+           , lens -test-doctests
+           , comonad -test-doctests
+           , semigroupoids -doctests
