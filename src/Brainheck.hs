@@ -30,7 +30,7 @@ type Parser = Parsec Void T.Text
 -- | Syntax tree for brainfuck
 data Syntax a = Loop (Syntax a)
               | Seq [Syntax a]
-              | Token a deriving (Show)
+              | Token a
 
 makeBaseFunctor ''Syntax
 
@@ -56,7 +56,7 @@ brainheck = Seq <$> many (Seq . fmap Token <$> (some . oneOf) "+-.,<>"
 
 algebra :: Base (Syntax Char) (St ()) -> St ()
 algebra (TokenF x) = toAction x
-algebra (SeqF x) = foldr (>>) (pure ()) x
+algebra (SeqF x) = sequence_ x
 algebra l@(LoopF x) = check >>= (\bool -> if bool then pure () else x >> algebra l)
     where check = get >>= (\(arr,i) -> pure . (==0) . (V.! i) $ arr)
 
