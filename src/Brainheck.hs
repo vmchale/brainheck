@@ -1,6 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE KindSignatures   #-}
-{-# LANGUAGE TemplateHaskell  #-}
+{-# LANGUAGE TypeFamilies     #-}
 
 -- | Module with parser etc.
 module Brainheck
@@ -12,8 +11,7 @@ module Brainheck
 
 import           Control.Lens             hiding (lens)
 import           Control.Monad.State.Lazy
-import           Data.Functor.Foldable
-import           Data.Functor.Foldable.TH
+import           Control.Recursion
 import qualified Data.Map                 as M
 import           Data.Maybe
 import qualified Data.Text                as T
@@ -32,7 +30,17 @@ data Syntax a = Loop (Syntax a)
               | Seq [Syntax a]
               | Token a
 
-makeBaseFunctor ''Syntax
+data SyntaxF a x = LoopF x
+                 | SeqF [x]
+                 | TokenF a
+                 deriving (Functor)
+
+type instance Base (Syntax a) = SyntaxF a
+
+instance Recursive (Syntax a) where
+    project (Loop x)  = LoopF x
+    project (Seq xs)  = SeqF xs
+    project (Token c) = TokenF c
 
 -- | Map a char to its action in the `St` monad
 toAction :: Char -> St ()
