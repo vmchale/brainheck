@@ -45,7 +45,7 @@ library
         recursion -any,
         text -any,
         lens -any,
-        megaparsec >=6.0,
+        megaparsec >=7.0,
         containers -any
     
     if flag(development)

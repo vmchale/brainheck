@@ -73,5 +73,5 @@ run :: Syntax Char -> IO ()
 run parsed = fst <$> runStateT (cata algebra parsed) (V.replicate 30000 0, 0)
 
 -- | Parse and return an error or a syntax tree
-parseBrainheck :: FilePath -> T.Text -> Either (ParseError (Token T.Text) Void) (Syntax Char)
+parseBrainheck :: FilePath -> T.Text -> Either (ParseErrorBundle T.Text Void) (Syntax Char)
 parseBrainheck filepath = parse brainheck filepath . T.filter (`elem` "[]+-.,<>")
