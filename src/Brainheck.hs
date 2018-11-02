@@ -42,7 +42,7 @@ instance Recursive (Syntax a) where
     project (Seq xs)  = SeqF xs
     project (Token c) = TokenF c
 
--- | Map a char to its action in the `St` monad
+-- | Map a char to its action in the 'St' monad
 toAction :: Char -> St ()
 toAction = fromMaybe (error mempty) . flip M.lookup keys
     where modifyVal f = flip modifyByIndex f . snd =<< get

@@ -9,7 +9,7 @@ monadic parser combinators.
 With [cabal](https://www.haskell.org/cabal/download.html):
 
 ```bash
- $ cabal install brainheck
+ $ cabal new-install brainheck
 ```
 
 ## Examples
