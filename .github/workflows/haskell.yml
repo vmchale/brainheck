@@ -11,7 +11,7 @@ jobs:
         run: |
           cabal update
           cabal build --enable-tests --enable-benchmarks --only-dependencies
-      - name: Build
+      - name: build
         run: "cabal build --enable-tests --enable-benchmarks"
     strategy:
       matrix:
